@@ -139,6 +139,47 @@ func (store *MessageStore) StoreChat(jid, name string, lastMessageTime time.Time
 	return err
 }
 
+// Ensure a person exists in the people table
+func (store *MessageStore) EnsurePersonExists(jid, phoneNumber string, logger waLog.Logger) error {
+	// Check if person already exists
+	data, _, err := store.supabase.From("people").
+		Select("jid", "", false).
+		Eq("jid", jid).
+		Execute()
+
+	if err != nil {
+		return fmt.Errorf("failed to check if person exists: %v", err)
+	}
+
+	var results []struct {
+		JID string `json:"jid"`
+	}
+
+	err = json.Unmarshal(data, &results)
+	if err != nil {
+		return fmt.Errorf("failed to parse person check result: %v", err)
+	}
+
+	// If person doesn't exist, create them
+	if len(results) == 0 {
+		personData := map[string]interface{}{
+			"jid":          jid,
+			"phone_number": phoneNumber,
+			"created_at":   time.Now().Format(time.RFC3339),
+			"updated_at":   time.Now().Format(time.RFC3339),
+		}
+
+		_, _, err := store.supabase.From("people").Upsert(personData, "", "", "").Execute()
+		if err != nil {
+			return fmt.Errorf("failed to create person: %v", err)
+		}
+
+		logger.Infof("Created new person: %s (%s)", phoneNumber, jid)
+	}
+
+	return nil
+}
+
 // Store a message in the database
 func (store *MessageStore) StoreMessage(id, chatJID, sender, content string, timestamp time.Time, isFromMe bool,
 	mediaType, filename, url string, mediaKey, fileSHA256, fileEncSHA256 []byte, fileLength uint64) error {
@@ -469,6 +510,7 @@ func extractMediaInfo(msg *waProto.Message) (mediaType string, filename string, 
 func handleMessage(client *whatsmeow.Client, messageStore *MessageStore, msg *events.Message, logger waLog.Logger) {
 	// Save message to database
 	chatJID := msg.Info.Chat.String()
+	senderJID := msg.Info.Sender.String() // Use full JID instead of just user part
 	sender := msg.Info.Sender.User
 
 	// Get appropriate chat name (pass nil for conversation since we don't have one for regular messages)
@@ -478,6 +520,12 @@ func handleMessage(client *whatsmeow.Client, messageStore *MessageStore, msg *ev
 	err := messageStore.StoreChat(chatJID, name, msg.Info.Timestamp)
 	if err != nil {
 		logger.Warnf("Failed to store chat: %v", err)
+	}
+
+	// Ensure sender exists in people table
+	err = messageStore.EnsurePersonExists(senderJID, sender, logger)
+	if err != nil {
+		logger.Warnf("Failed to ensure person exists: %v", err)
 	}
 
 	// Extract text content
@@ -495,7 +543,7 @@ func handleMessage(client *whatsmeow.Client, messageStore *MessageStore, msg *ev
 	err = messageStore.StoreMessage(
 		msg.Info.ID,
 		chatJID,
-		sender,
+		senderJID, // Use full JID
 		content,
 		msg.Info.Timestamp,
 		msg.Info.IsFromMe,
@@ -1210,6 +1258,7 @@ func handleHistorySync(client *whatsmeow.Client, messageStore *MessageStore, his
 				}
 
 				// Determine sender
+				var senderJID string
 				var sender string
 				isFromMe := false
 				if msg.Message.Key != nil {
@@ -1217,14 +1266,24 @@ func handleHistorySync(client *whatsmeow.Client, messageStore *MessageStore, his
 						isFromMe = *msg.Message.Key.FromMe
 					}
 					if !isFromMe && msg.Message.Key.Participant != nil && *msg.Message.Key.Participant != "" {
-						sender = *msg.Message.Key.Participant
+						senderJID = *msg.Message.Key.Participant
+						sender = jid.User // Extract user part from JID
 					} else if isFromMe {
+						senderJID = client.Store.ID.String()
 						sender = client.Store.ID.User
 					} else {
+						senderJID = jid.String()
 						sender = jid.User
 					}
 				} else {
+					senderJID = jid.String()
 					sender = jid.User
+				}
+
+				// Ensure sender exists in people table
+				err = messageStore.EnsurePersonExists(senderJID, sender, logger)
+				if err != nil {
+					logger.Warnf("Failed to ensure person exists: %v", err)
 				}
 
 				// Store message
@@ -1244,7 +1303,7 @@ func handleHistorySync(client *whatsmeow.Client, messageStore *MessageStore, his
 				err = messageStore.StoreMessage(
 					msgID,
 					chatJID,
-					sender,
+					senderJID, // Use full JID
 					content,
 					timestamp,
 					isFromMe,
