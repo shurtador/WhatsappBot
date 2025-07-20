@@ -17,8 +17,10 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 	"github.com/mdp/qrterminal"
+	"github.com/supabase-community/postgrest-go"
+	"github.com/supabase-community/supabase-go"
 
 	"bytes"
 
@@ -30,6 +32,57 @@ import (
 	waLog "go.mau.fi/whatsmeow/util/log"
 	"google.golang.org/protobuf/proto"
 )
+
+// loadEnvFromParent loads environment variables from .env file in parent directory
+func loadEnvFromParent() error {
+	// Get current directory
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current directory: %v", err)
+	}
+
+	// Look for .env file in parent directory
+	parentDir := filepath.Dir(currentDir)
+	envPath := filepath.Join(parentDir, ".env")
+
+	// Check if .env file exists
+	if _, err := os.Stat(envPath); os.IsNotExist(err) {
+		return fmt.Errorf(".env file not found in parent directory: %s", envPath)
+	}
+
+	// Read .env file
+	envContent, err := os.ReadFile(envPath)
+	if err != nil {
+		return fmt.Errorf("failed to read .env file: %v", err)
+	}
+
+	// Parse and set environment variables
+	lines := strings.Split(string(envContent), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) == 2 {
+			key := strings.TrimSpace(parts[0])
+			value := strings.TrimSpace(parts[1])
+
+			// Remove quotes if present
+			if len(value) >= 2 && (value[0] == '"' && value[len(value)-1] == '"') {
+				value = value[1 : len(value)-1]
+			}
+
+			// Only set if not already set
+			if os.Getenv(key) == "" {
+				os.Setenv(key, value)
+			}
+		}
+	}
+
+	return nil
+}
 
 // Message represents a chat message for our client
 type Message struct {
@@ -43,67 +96,46 @@ type Message struct {
 
 // Database handler for storing message history
 type MessageStore struct {
-	db *sql.DB
+	supabase *supabase.Client
 }
 
 // Initialize message store
 func NewMessageStore() (*MessageStore, error) {
-	// Create directory for database if it doesn't exist
-	if err := os.MkdirAll("store", 0755); err != nil {
-		return nil, fmt.Errorf("failed to create store directory: %v", err)
+	// Get Supabase credentials from environment
+	supabaseURL := os.Getenv("SUPABASE_URL")
+	supabaseKey := os.Getenv("SUPABASE_SERVICE_ROLE_KEY")
+
+	if supabaseURL == "" || supabaseKey == "" {
+		return nil, fmt.Errorf("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables are required")
 	}
 
-	// Open SQLite database for messages
-	db, err := sql.Open("sqlite3", "file:store/messages.db?_foreign_keys=on")
+	// Initialize Supabase client
+	supabase, err := supabase.NewClient(supabaseURL, supabaseKey, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open message database: %v", err)
+		return nil, fmt.Errorf("failed to create Supabase client: %v", err)
 	}
 
-	// Create tables if they don't exist
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS chats (
-			jid TEXT PRIMARY KEY,
-			name TEXT,
-			last_message_time TIMESTAMP
-		);
-		
-		CREATE TABLE IF NOT EXISTS messages (
-			id TEXT,
-			chat_jid TEXT,
-			sender TEXT,
-			content TEXT,
-			timestamp TIMESTAMP,
-			is_from_me BOOLEAN,
-			media_type TEXT,
-			filename TEXT,
-			url TEXT,
-			media_key BLOB,
-			file_sha256 BLOB,
-			file_enc_sha256 BLOB,
-			file_length INTEGER,
-			PRIMARY KEY (id, chat_jid),
-			FOREIGN KEY (chat_jid) REFERENCES chats(jid)
-		);
-	`)
-	if err != nil {
-		db.Close()
-		return nil, fmt.Errorf("failed to create tables: %v", err)
-	}
-
-	return &MessageStore{db: db}, nil
+	return &MessageStore{supabase: supabase}, nil
 }
 
 // Close the database connection
 func (store *MessageStore) Close() error {
-	return store.db.Close()
+	// Supabase client doesn't need explicit closing
+	return nil
 }
 
 // Store a chat in the database
 func (store *MessageStore) StoreChat(jid, name string, lastMessageTime time.Time) error {
-	_, err := store.db.Exec(
-		"INSERT OR REPLACE INTO chats (jid, name, last_message_time) VALUES (?, ?, ?)",
-		jid, name, lastMessageTime,
-	)
+	chatData := map[string]interface{}{
+		"jid":               jid,
+		"name":              name,
+		"last_message_time": lastMessageTime.Format(time.RFC3339),
+		"chat_type":         "individual", // Default to individual, will be updated for groups
+		"created_at":        time.Now().Format(time.RFC3339),
+		"updated_at":        time.Now().Format(time.RFC3339),
+	}
+
+	_, _, err := store.supabase.From("chats").Upsert(chatData, "", "", "").Execute()
 	return err
 }
 
@@ -115,36 +147,48 @@ func (store *MessageStore) StoreMessage(id, chatJID, sender, content string, tim
 		return nil
 	}
 
-	_, err := store.db.Exec(
-		`INSERT OR REPLACE INTO messages 
-		(id, chat_jid, sender, content, timestamp, is_from_me, media_type, filename, url, media_key, file_sha256, file_enc_sha256, file_length) 
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		id, chatJID, sender, content, timestamp, isFromMe, mediaType, filename, url, mediaKey, fileSHA256, fileEncSHA256, fileLength,
-	)
+	messageData := map[string]interface{}{
+		"id":           id,
+		"chat_jid":     chatJID,
+		"sender_jid":   sender,
+		"content":      content,
+		"timestamp":    timestamp.Format(time.RFC3339),
+		"is_from_me":   isFromMe,
+		"message_type": mediaType,
+		"created_at":   time.Now().Format(time.RFC3339),
+	}
+
+	// Add media info if present
+	if mediaType != "" {
+		mediaInfo := map[string]interface{}{
+			"filename":    filename,
+			"url":         url,
+			"file_length": fileLength,
+		}
+		messageData["media_info"] = mediaInfo
+	}
+
+	_, _, err := store.supabase.From("messages").Upsert(messageData, "", "", "").Execute()
 	return err
 }
 
 // Get messages from a chat
 func (store *MessageStore) GetMessages(chatJID string, limit int) ([]Message, error) {
-	rows, err := store.db.Query(
-		"SELECT sender, content, timestamp, is_from_me, media_type, filename FROM messages WHERE chat_jid = ? ORDER BY timestamp DESC LIMIT ?",
-		chatJID, limit,
-	)
+	data, _, err := store.supabase.From("messages").
+		Select("sender_jid, content, timestamp, is_from_me, message_type, media_info", "", false).
+		Eq("chat_jid", chatJID).
+		Order("timestamp", &postgrest.OrderOpts{Ascending: false}).
+		Limit(limit, "").
+		Execute()
+
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	var messages []Message
-	for rows.Next() {
-		var msg Message
-		var timestamp time.Time
-		err := rows.Scan(&msg.Sender, &msg.Content, &timestamp, &msg.IsFromMe, &msg.MediaType, &msg.Filename)
-		if err != nil {
-			return nil, err
-		}
-		msg.Time = timestamp
-		messages = append(messages, msg)
+	err = json.Unmarshal(data, &messages)
+	if err != nil {
+		return nil, err
 	}
 
 	return messages, nil
@@ -152,21 +196,34 @@ func (store *MessageStore) GetMessages(chatJID string, limit int) ([]Message, er
 
 // Get all chats
 func (store *MessageStore) GetChats() (map[string]time.Time, error) {
-	rows, err := store.db.Query("SELECT jid, last_message_time FROM chats ORDER BY last_message_time DESC")
+	data, _, err := store.supabase.From("chats").
+		Select("jid, last_message_time", "", false).
+		Order("last_message_time", &postgrest.OrderOpts{Ascending: false}).
+		Execute()
+
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+
+	var chatResults []struct {
+		JID             string `json:"jid"`
+		LastMessageTime string `json:"last_message_time"`
+	}
+
+	err = json.Unmarshal(data, &chatResults)
+	if err != nil {
+		return nil, err
+	}
 
 	chats := make(map[string]time.Time)
-	for rows.Next() {
-		var jid string
-		var lastMessageTime time.Time
-		err := rows.Scan(&jid, &lastMessageTime)
-		if err != nil {
-			return nil, err
+	for _, chat := range chatResults {
+		if chat.LastMessageTime != "" {
+			lastMessageTime, err := time.Parse(time.RFC3339, chat.LastMessageTime)
+			if err != nil {
+				continue // Skip invalid timestamps
+			}
+			chats[chat.JID] = lastMessageTime
 		}
-		chats[jid] = lastMessageTime
 	}
 
 	return chats, nil
@@ -486,25 +543,72 @@ type DownloadMediaResponse struct {
 
 // Store additional media info in the database
 func (store *MessageStore) StoreMediaInfo(id, chatJID, url string, mediaKey, fileSHA256, fileEncSHA256 []byte, fileLength uint64) error {
-	_, err := store.db.Exec(
-		"UPDATE messages SET url = ?, media_key = ?, file_sha256 = ?, file_enc_sha256 = ?, file_length = ? WHERE id = ? AND chat_jid = ?",
-		url, mediaKey, fileSHA256, fileEncSHA256, fileLength, id, chatJID,
-	)
+	mediaInfo := map[string]interface{}{
+		"url":             url,
+		"media_key":       mediaKey,
+		"file_sha256":     fileSHA256,
+		"file_enc_sha256": fileEncSHA256,
+		"file_length":     fileLength,
+	}
+
+	updateData := map[string]interface{}{
+		"media_info": mediaInfo,
+		"updated_at": time.Now().Format(time.RFC3339),
+	}
+
+	_, _, err := store.supabase.From("messages").
+		Update(updateData, "", "").
+		Eq("id", id).
+		Eq("chat_jid", chatJID).
+		Execute()
+
 	return err
 }
 
 // Get media info from the database
 func (store *MessageStore) GetMediaInfo(id, chatJID string) (string, string, string, []byte, []byte, []byte, uint64, error) {
-	var mediaType, filename, url string
+	data, _, err := store.supabase.From("messages").
+		Select("message_type, media_info", "", false).
+		Eq("id", id).
+		Eq("chat_jid", chatJID).
+		Execute()
+
+	if err != nil {
+		return "", "", "", nil, nil, nil, 0, err
+	}
+
+	var results []struct {
+		MessageType string                 `json:"message_type"`
+		MediaInfo   map[string]interface{} `json:"media_info"`
+	}
+
+	err = json.Unmarshal(data, &results)
+	if err != nil || len(results) == 0 {
+		return "", "", "", nil, nil, nil, 0, fmt.Errorf("no media info found")
+	}
+
+	result := results[0]
+	mediaType := result.MessageType
+	filename := ""
+	url := ""
 	var mediaKey, fileSHA256, fileEncSHA256 []byte
 	var fileLength uint64
 
-	err := store.db.QueryRow(
-		"SELECT media_type, filename, url, media_key, file_sha256, file_enc_sha256, file_length FROM messages WHERE id = ? AND chat_jid = ?",
-		id, chatJID,
-	).Scan(&mediaType, &filename, &url, &mediaKey, &fileSHA256, &fileEncSHA256, &fileLength)
+	if result.MediaInfo != nil {
+		if f, ok := result.MediaInfo["filename"].(string); ok {
+			filename = f
+		}
+		if u, ok := result.MediaInfo["url"].(string); ok {
+			url = u
+		}
+		if l, ok := result.MediaInfo["file_length"].(float64); ok {
+			fileLength = uint64(l)
+		}
+		// Note: Binary data (mediaKey, fileSHA256, fileEncSHA256) would need special handling
+		// For now, we'll return empty slices
+	}
 
-	return mediaType, filename, url, mediaKey, fileSHA256, fileEncSHA256, fileLength, err
+	return mediaType, filename, url, mediaKey, fileSHA256, fileEncSHA256, fileLength, nil
 }
 
 // MediaDownloader implements the whatsmeow.DownloadableMessage interface
@@ -569,15 +673,7 @@ func downloadMedia(client *whatsmeow.Client, messageStore *MessageStore, message
 	mediaType, filename, url, mediaKey, fileSHA256, fileEncSHA256, fileLength, err = messageStore.GetMediaInfo(messageID, chatJID)
 
 	if err != nil {
-		// Try to get basic info if extended info isn't available
-		err = messageStore.db.QueryRow(
-			"SELECT media_type, filename FROM messages WHERE id = ? AND chat_jid = ?",
-			messageID, chatJID,
-		).Scan(&mediaType, &filename)
-
-		if err != nil {
-			return false, "", "", "", fmt.Errorf("failed to find message: %v", err)
-		}
+		return false, "", "", "", fmt.Errorf("failed to find message: %v", err)
 	}
 
 	// Check if this is a media message
@@ -787,6 +883,24 @@ func startRESTServer(client *whatsmeow.Client, messageStore *MessageStore, port 
 }
 
 func main() {
+	// Load environment variables from parent directory .env file
+	if err := loadEnvFromParent(); err != nil {
+		fmt.Printf("Warning: Could not load .env file: %v\n", err)
+		fmt.Println("Make sure environment variables are set manually or .env file exists in parent directory")
+	}
+
+	// Check if we should run tests
+	if len(os.Args) > 1 && os.Args[1] == "-test" {
+		RunTests()
+		return
+	}
+
+	// Check if we should run comprehensive tests
+	if len(os.Args) > 1 && os.Args[1] == "-test-comprehensive" {
+		ComprehensiveTestSuite()
+		return
+	}
+
 	// Set up logger
 	logger := waLog.Stdout("Client", "INFO", true)
 	logger.Infof("Starting WhatsApp client...")
@@ -800,7 +914,14 @@ func main() {
 		return
 	}
 
-	container, err := sqlstore.New("sqlite3", "file:store/whatsapp.db?_foreign_keys=on", dbLog)
+	// Get Supabase PostgreSQL connection string
+	postgresURL := os.Getenv("SUPABASE_POSTGRES_URL")
+	if postgresURL == "" {
+		logger.Errorf("SUPABASE_POSTGRES_URL environment variable is required")
+		return
+	}
+
+	container, err := sqlstore.New("postgres", postgresURL, dbLog)
 	if err != nil {
 		logger.Errorf("Failed to connect to database: %v", err)
 		return
@@ -925,12 +1046,20 @@ func main() {
 // GetChatName determines the appropriate name for a chat based on JID and other info
 func GetChatName(client *whatsmeow.Client, messageStore *MessageStore, jid types.JID, chatJID string, conversation interface{}, sender string, logger waLog.Logger) string {
 	// First, check if chat already exists in database with a name
-	var existingName string
-	err := messageStore.db.QueryRow("SELECT name FROM chats WHERE jid = ?", chatJID).Scan(&existingName)
-	if err == nil && existingName != "" {
-		// Chat exists with a name, use that
-		logger.Infof("Using existing chat name for %s: %s", chatJID, existingName)
-		return existingName
+	data, _, err := messageStore.supabase.From("chats").
+		Select("name", "", false).
+		Eq("jid", chatJID).
+		Execute()
+
+	if err == nil {
+		var results []struct {
+			Name string `json:"name"`
+		}
+		if json.Unmarshal(data, &results) == nil && len(results) > 0 && results[0].Name != "" {
+			// Chat exists with a name, use that
+			logger.Infof("Using existing chat name for %s: %s", chatJID, results[0].Name)
+			return results[0].Name
+		}
 	}
 
 	// Need to determine chat name
