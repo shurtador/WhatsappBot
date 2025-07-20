@@ -1,0 +1,20 @@
+# Go Service
+OPENAI_API_KEY=
+SUPABASE_POSTGRES_URL=
+GO_BRIDGE_ENV= //development or production
+SUPABASE_STORAGE_BUCKET= //main-bucket
+
+# TypeScript App
+SUPABASE_URL=
+SUPABASE_KEY=
+SUPABASE_ANON_KEY= //respect RLS policies
+SUPABASE_SERVICE_ROLE_KEY= //bypass RLS policies
+SUPABASE_DB_POOL_SIZE= //10
+
+# Service Ports
+GO_BRIDGE_PORT= //8080
+NEXTJS_PORT= //3000
+
+# Service URLs (for local development)
+GO_BRIDGE_URL= //http://localhost:8080
+NEXTJS_URL= //http://localhost:3000 
