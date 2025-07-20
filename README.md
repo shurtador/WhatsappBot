@@ -1,5 +1,15 @@
 # WhatsApp Bridge & Business Intelligence System
 
+---
+
+## 🚧 Development Progress
+
+- **Phase 3.1 Complete:** Next.js project setup, TypeScript, ESLint, Prettier, Chakra UI integration, and environment configuration are done.
+- **Landing Page:** A professional landing page was built early (for developer experience and Chakra UI integration). This will be finalized and expanded in a later UI phase (see PRD Phase 3.6/3.7).
+- **Current Focus:** Backend workflows and CLI flows. The next steps will focus on Supabase integration, authentication, and API/CLI operations before further UI work.
+
+---
+
 A comprehensive WhatsApp integration system that bridges WhatsApp conversations with business intelligence capabilities. The system consists of a Go-based WhatsApp bridge and a Next.js application for business logic processing, both connected via Supabase.
 
 ## 🚀 Quick Start

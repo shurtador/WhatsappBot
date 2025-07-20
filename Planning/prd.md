@@ -161,14 +161,17 @@ WhatsApp ←→ Go Bridge ←→ Supabase DB ←→ Next.js App
 - [ ] Create Dockerfile for Go service
 
 ### Phase 3: Next.js Application
-- [ ] **3.1 Next.js Project Setup and Configuration**
-  - [ ] Create Next.js project with TypeScript in `nextjs-app/` directory
-  - [ ] Configure TypeScript with strict mode and proper settings
-  - [ ] Set up ESLint and Prettier for code quality
-  - [ ] Configure Next.js for API routes and server-side rendering
-  - [ ] Set up project structure with proper folder organization
-  - [ ] Create base layout and global styles
-  - [ ] Configure environment variables and `.env.local`
+- [x] **3.1 Next.js Project Setup and Configuration**
+  - [x] Create Next.js project with TypeScript in `nextjs-app/` directory
+  - [x] Configure TypeScript with strict mode and proper settings
+  - [x] Set up ESLint and Prettier for code quality
+  - [x] Configure Next.js for API routes and server-side rendering
+  - [x] Set up project structure with proper folder organization
+  - [x] Create base layout and global styles (Chakra UI)
+  - [x] Configure environment variables and `.env.local`
+  - [x] **(Extra)** Built a professional landing page with Chakra UI for developer experience and future use. **This will be moved to Phase 3.6/3.7 for further development.**
+
+> **Note:** The landing page was built early to ensure Chakra UI integration and a smooth developer experience, but the main focus for the next phases will be backend workflows and CLI flows. UI/UX work (including the landing page and dashboards) will be continued in Phase 3.6 (Contact Management UI) and Phase 3.7 (Business Intelligence Features).
 
 - [ ] **3.2 Supabase Client Integration and Authentication**
   - [ ] Install and configure Supabase client libraries
@@ -241,6 +244,10 @@ WhatsApp ←→ Go Bridge ←→ Supabase DB ←→ Next.js App
     - [ ] Implement message volume charts
     - [ ] Add interaction timeline view
     - [ ] Create export functionality
+  - [ ] **3.6.4 Landing Page & Hero UI**
+    - [ ] Polish and finalize the landing page and hero UI (initial version built in 3.1 for DX)
+    - [ ] Add navigation, branding, and onboarding flows
+    - [ ] Integrate with authentication and dashboard
 
 - [ ] **3.7 Business Intelligence Features**
   - [ ] **3.7.1 Summary Dashboard**
