@@ -161,12 +161,144 @@ WhatsApp ←→ Go Bridge ←→ Supabase DB ←→ Next.js App
 - [ ] Create Dockerfile for Go service
 
 ### Phase 3: Next.js Application
-- [ ] Create Next.js project with TypeScript
-- [ ] Set up Supabase client and auth
-- [ ] Create API routes for business logic
-- [ ] Implement OpenAI integration
-- [ ] Create scheduled summary generation
-- [ ] Create Dockerfile for Next.js service
+- [ ] **3.1 Next.js Project Setup and Configuration**
+  - [ ] Create Next.js project with TypeScript in `nextjs-app/` directory
+  - [ ] Configure TypeScript with strict mode and proper settings
+  - [ ] Set up ESLint and Prettier for code quality
+  - [ ] Configure Next.js for API routes and server-side rendering
+  - [ ] Set up project structure with proper folder organization
+  - [ ] Create base layout and global styles
+  - [ ] Configure environment variables and `.env.local`
+
+- [ ] **3.2 Supabase Client Integration and Authentication**
+  - [ ] Install and configure Supabase client libraries
+  - [ ] Set up Supabase client configuration with environment variables
+  - [ ] Create authentication context and hooks
+  - [ ] Implement login/logout functionality with Supabase Auth
+  - [ ] Set up protected routes and authentication guards
+  - [ ] Create user profile management
+  - [ ] Test authentication flow end-to-end
+
+- [ ] **3.3 OpenAI Integration for Message Summarization**
+  - [ ] Install OpenAI SDK and configure API client
+  - [ ] Create OpenAI service with proper error handling
+  - [ ] Implement message summarization logic
+  - [ ] Create prompt engineering for different summary types (daily, weekly, custom)
+  - [ ] Add rate limiting and cost management
+  - [ ] Implement retry logic for failed API calls
+  - [ ] Create summary quality validation
+
+- [ ] **3.4 API Route Implementation for Business Logic**
+  - [ ] **3.4.1 Summary Generation API**
+    - [ ] Create `/api/summaries/generate` endpoint
+    - [ ] Implement message retrieval from Supabase
+    - [ ] Add OpenAI integration for summary generation
+    - [ ] Store generated summaries in database
+    - [ ] Add validation and error handling
+  - [ ] **3.4.2 Summary Scheduling API**
+    - [ ] Create `/api/summaries/schedule` endpoint
+    - [ ] Implement scheduling logic with cron-like functionality
+    - [ ] Add schedule management (create, update, delete)
+    - [ ] Integrate with message sending via Go bridge
+  - [ ] **3.4.3 Contact Management API**
+    - [ ] Create `/api/people` endpoint for listing contacts
+    - [ ] Create `/api/people/[jid]` endpoint for updating contact info
+    - [ ] Implement contact search and filtering
+    - [ ] Add contact enrichment functionality
+  - [ ] **3.4.4 Analytics API**
+    - [ ] Create `/api/analytics/engagement` endpoint
+    - [ ] Implement engagement metrics calculation
+    - [ ] Add message volume analytics
+    - [ ] Create decision maker tracking
+  - [ ] **3.4.5 Go Bridge Integration API**
+    - [ ] Create wrapper functions for Go bridge API calls
+    - [ ] Implement message sending via Go bridge
+    - [ ] Add media download functionality
+    - [ ] Create error handling for bridge communication
+
+- [ ] **3.5 Scheduled Task System for Summary Generation**
+  - [ ] Set up cron job system (using node-cron or similar)
+  - [ ] Implement daily summary generation at configurable times
+  - [ ] Create weekly summary generation logic
+  - [ ] Add custom summary scheduling functionality
+  - [ ] Implement summary delivery via WhatsApp
+  - [ ] Add summary generation status tracking
+  - [ ] Create summary failure handling and retry logic
+
+- [ ] **3.6 Contact Management UI (V2 Features)**
+  - [ ] **3.6.1 Contact List Interface**
+    - [ ] Create responsive contact list component
+    - [ ] Implement contact search and filtering
+    - [ ] Add contact sorting options
+    - [ ] Create contact detail view
+  - [ ] **3.6.2 Contact Edit Interface**
+    - [ ] Create contact edit form with validation
+    - [ ] Implement business information fields
+    - [ ] Add tag management system
+    - [ ] Create decision maker flagging
+  - [ ] **3.6.3 Contact Analytics Dashboard**
+    - [ ] Create engagement metrics visualization
+    - [ ] Implement message volume charts
+    - [ ] Add interaction timeline view
+    - [ ] Create export functionality
+
+- [ ] **3.7 Business Intelligence Features**
+  - [ ] **3.7.1 Summary Dashboard**
+    - [ ] Create summary overview page
+    - [ ] Implement summary history view
+    - [ ] Add summary search and filtering
+    - [ ] Create summary export functionality
+  - [ ] **3.7.2 Analytics Dashboard**
+    - [ ] Create engagement analytics page
+    - [ ] Implement message volume trends
+    - [ ] Add participant activity tracking
+    - [ ] Create custom report generation
+  - [ ] **3.7.3 Decision Maker Tracking**
+    - [ ] Create decision maker identification
+    - [ ] Implement influence scoring
+    - [ ] Add relationship mapping
+    - [ ] Create stakeholder analysis
+
+- [ ] **3.8 Docker Configuration for Next.js Service**
+  - [ ] Create Dockerfile for Next.js application
+  - [ ] Configure multi-stage build for optimization
+  - [ ] Set up environment variable handling
+  - [ ] Add health check endpoints
+  - [ ] Configure proper logging
+  - [ ] Optimize image size and build time
+
+- [ ] **3.9 Integration Testing with Existing Go Bridge**
+  - [ ] **3.9.1 API Integration Tests**
+    - [ ] Test message sending via Go bridge
+    - [ ] Verify message retrieval from database
+    - [ ] Test media download functionality
+    - [ ] Validate error handling scenarios
+  - [ ] **3.9.2 End-to-End Workflow Tests**
+    - [ ] Test complete summary generation workflow
+    - [ ] Verify scheduled summary delivery
+    - [ ] Test contact management integration
+    - [ ] Validate analytics data flow
+  - [ ] **3.9.3 Performance Testing**
+    - [ ] Test API response times
+    - [ ] Verify database query performance
+    - [ ] Test concurrent user scenarios
+    - [ ] Validate memory usage
+
+- [ ] **3.10 Security and Error Handling**
+  - [ ] Implement proper input validation for all API endpoints
+  - [ ] Add rate limiting for API routes
+  - [ ] Set up proper error logging and monitoring
+  - [ ] Implement secure error messages
+  - [ ] Add API key rotation and management
+  - [ ] Create audit logging for sensitive operations
+
+- [ ] **3.11 Documentation and Testing**
+  - [ ] Create API documentation with examples
+  - [ ] Write unit tests for all business logic
+  - [ ] Create integration test suite
+  - [ ] Document deployment procedures
+  - [ ] Create user guides for features
+  - [ ] Add code documentation and comments
 
 ### Phase 4: Docker Integration
 - [ ] Create docker-compose.yml
@@ -183,13 +315,22 @@ WhatsApp ←→ Go Bridge ←→ Supabase DB ←→ Next.js App
 ## 🔑 Environment Variables
 
 ### Required Variables
-- `SUPABASE_URL` - Supabase project URL
-- `SUPABASE_KEY` - Supabase anon key
-- `SUPABASE_POSTGRES_URL` - Direct database connection
-- `OPENAI_API_KEY` - OpenAI API key
-- `GO_BRIDGE_PORT` - Go bridge HTTP server port (8080)
-- `NEXTJS_PORT` - Next.js app port (3000)
-- `GO_BRIDGE_URL` - URL for Next.js to call Go bridge
+- **Database & Auth**
+  - `SUPABASE_URL` - Supabase project URL
+  - `SUPABASE_ANON_KEY` - Supabase anon key (for client)
+  - `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key (for server)
+  - `SUPABASE_POSTGRES_URL` - Direct database connection
+- **AI Services**
+  - `OPENAI_API_KEY` - OpenAI API key for message summarization
+  - `OPENAI_MODEL` - OpenAI model to use (default: gpt-4o-mini)
+- **Service Configuration**
+  - `GO_BRIDGE_PORT` - Go bridge HTTP server port (8080)
+  - `NEXTJS_PORT` - Next.js app port (3000)
+  - `GO_BRIDGE_URL` - URL for Next.js to call Go bridge (http://localhost:8080)
+- **Application Settings**
+  - `NEXTAUTH_SECRET` - NextAuth secret for session management
+  - `NEXTAUTH_URL` - NextAuth URL (http://localhost:3000)
+  - `NODE_ENV` - Environment (development, production)
 
 ## 🚀 Key Features
 
@@ -217,11 +358,28 @@ WhatsApp ←→ Go Bridge ←→ Supabase DB ←→ Next.js App
 - `POST /download-media` - Download media files ✅
 
 ### Next.js API
-- `POST /api/summaries/generate` - Generate message summary
-- `POST /api/summaries/schedule` - Schedule summary delivery
-- `GET /api/people` - List all contacts
-- `PUT /api/people/{jid}` - Update contact information
-- `GET /api/analytics/engagement` - Get engagement metrics
+- **Summary Management**
+  - `POST /api/summaries/generate` - Generate message summary
+  - `POST /api/summaries/schedule` - Schedule summary delivery
+  - `GET /api/summaries` - List all summaries
+  - `GET /api/summaries/{id}` - Get specific summary
+  - `DELETE /api/summaries/{id}` - Delete summary
+- **Contact Management**
+  - `GET /api/people` - List all contacts with filtering
+  - `GET /api/people/{jid}` - Get specific contact
+  - `PUT /api/people/{jid}` - Update contact information
+  - `POST /api/people/{jid}/tags` - Add tags to contact
+  - `DELETE /api/people/{jid}/tags` - Remove tags from contact
+- **Analytics**
+  - `GET /api/analytics/engagement` - Get engagement metrics
+  - `GET /api/analytics/message-volume` - Get message volume trends
+  - `GET /api/analytics/decision-makers` - Get decision maker insights
+  - `GET /api/analytics/contacts/{jid}` - Get contact-specific analytics
+- **Go Bridge Integration**
+  - `POST /api/bridge/send` - Send message via Go bridge
+  - `GET /api/bridge/chats` - Get chats from Go bridge
+  - `GET /api/bridge/messages/{chatJID}` - Get messages from Go bridge
+  - `POST /api/bridge/download-media` - Download media via Go bridge
 
 ## 🔒 Security Considerations
 
@@ -294,5 +452,5 @@ WhatsApp ←→ Go Bridge ←→ Supabase DB ←→ Next.js App
 ---
 
 **Last Updated**: 2025-07-19
-**Version**: 1.1.0
-**Status**: Phase 2 Complete - Ready for Phase 3 (Next.js Application) 
+**Version**: 1.2.0
+**Status**: Phase 2 Complete - Phase 3 Detailed Planning Complete - Ready for Next.js Development 
