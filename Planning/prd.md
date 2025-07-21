@@ -195,12 +195,12 @@ WhatsApp ←→ Go Bridge ←→ Supabase DB ←→ Next.js App
   - [x] Create summary quality validation
 
 - [x] **3.4 API Route Implementation for Business Logic**
-  - [ ] **3.4.1 Summary Generation API**
-    - [ ] Create `/api/summaries/generate` endpoint
-    - [ ] Implement message retrieval from Supabase
-    - [ ] Add OpenAI integration for summary generation
-    - [ ] Store generated summaries in database
-    - [ ] Add validation and error handling
+  - [x] **3.4.1 Summary Generation API**
+    - [x] Create `/api/summaries/generate` endpoint
+    - [x] Implement message retrieval from Supabase
+    - [x] Add OpenAI integration for summary generation
+    - [x] Store generated summaries in database
+    - [x] Add validation and error handling
   - [ ] **3.4.2 Summary Scheduling API**
     - [ ] Create `/api/summaries/schedule` endpoint
     - [ ] Implement scheduling logic with cron-like functionality

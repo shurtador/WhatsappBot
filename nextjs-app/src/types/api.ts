@@ -95,4 +95,40 @@ export interface ContactFilters {
 export interface ContactSort {
   field: 'first_name' | 'last_name' | 'company' | 'last_seen' | 'created_at' | 'message_count';
   order: 'asc' | 'desc';
+}
+
+// Summary Generation Types
+export type SummaryType = 'daily' | 'weekly' | 'custom';
+
+export interface GenerateSummaryRequest {
+  chatJid: string;
+  summaryType: SummaryType;
+  startDate?: string; // ISO date string
+  endDate?: string; // ISO date string
+  customPrompt?: string;
+  includeParticipants?: boolean;
+}
+
+export interface SummaryResponse {
+  id: string;
+  chat_jid: string;
+  summary_type: SummaryType;
+  summary_period_start: string;
+  summary_period_end: string;
+  summary_content: string;
+  message_count: number;
+  participants_involved: string[];
+  created_at: string;
+}
+
+export interface SummaryListResponse {
+  summaries: SummaryResponse[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
 } 
