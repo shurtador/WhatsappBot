@@ -16,5 +16,9 @@ GO_BRIDGE_PORT= //8080
 NEXTJS_PORT= //3000
 
 # Service URLs (for local development)
-GO_BRIDGE_URL= //http://localhost:8080
-NEXTJS_URL= //http://localhost:3000 
+	GO_BRIDGE_URL= //http://localhost:8080
+	NEXTJS_URL= //http://localhost:3000 
+
+# Next Variables
+	NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+	NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key

@@ -1,3 +1,23 @@
+# Environment Variables Setup
+
+To run this project locally, you need to set up Supabase and OpenAI environment variables. Create a `.env.local` file in the `nextjs-app/` directory with the following content:
+
+```
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+
+# OpenAI Configuration (for message summarization)
+OPENAI_API_KEY=your-openai-api-key
+OPENAI_MODEL=gpt-4o-mini  # Optional, defaults to gpt-4o-mini
+```
+
+Replace the placeholder values with your actual credentials:
+- `your-supabase-url` and `your-supabase-anon-key` with your Supabase project credentials
+- `your-openai-api-key` with your OpenAI API key
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

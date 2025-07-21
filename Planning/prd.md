@@ -173,23 +173,26 @@ WhatsApp ←→ Go Bridge ←→ Supabase DB ←→ Next.js App
 
 > **Note:** The landing page was built early to ensure Chakra UI integration and a smooth developer experience, but the main focus for the next phases will be backend workflows and CLI flows. UI/UX work (including the landing page and dashboards) will be continued in Phase 3.6 (Contact Management UI) and Phase 3.7 (Business Intelligence Features).
 
-- [ ] **3.2 Supabase Client Integration and Authentication**
-  - [ ] Install and configure Supabase client libraries
-  - [ ] Set up Supabase client configuration with environment variables
-  - [ ] Create authentication context and hooks
-  - [ ] Implement login/logout functionality with Supabase Auth
-  - [ ] Set up protected routes and authentication guards
-  - [ ] Create user profile management
-  - [ ] Test authentication flow end-to-end
+- [x] **3.2 Supabase Client Integration and Authentication**
+  - [x] Install and configure Supabase client libraries (`@supabase/supabase-js`)
+  - [x] Set up Supabase client configuration with environment variables (`SUPABASE_URL`, `SUPABASE_ANON_KEY`)
+  - [x] Create authentication context/provider and hooks for user/session state
+  - [x] Implement login and registration using Supabase magic links (email only)
+  - [x] Minimal Chakra UI-based login/register page (no branding/polish for MVP)
+  - [x] Handle magic link sending, receiving, and error states
+  - [x] Set up protected routes and authentication guards (all except landing page)
+  - [x] Implement logout flow (redirect to landing page)
+  - [x] Document environment variable setup and authentication flow
+  - [x] Manual test of login, logout, registration, and protected routes
 
-- [ ] **3.3 OpenAI Integration for Message Summarization**
-  - [ ] Install OpenAI SDK and configure API client
-  - [ ] Create OpenAI service with proper error handling
-  - [ ] Implement message summarization logic
-  - [ ] Create prompt engineering for different summary types (daily, weekly, custom)
-  - [ ] Add rate limiting and cost management
-  - [ ] Implement retry logic for failed API calls
-  - [ ] Create summary quality validation
+- [x] **3.3 OpenAI Integration for Message Summarization**
+  - [x] Install OpenAI SDK and configure API client
+  - [x] Create OpenAI service with proper error handling
+  - [x] Implement message summarization logic
+  - [x] Create prompt engineering for different summary types (daily, weekly, custom)
+  - [x] Add rate limiting and cost management
+  - [x] Implement retry logic for failed API calls
+  - [x] Create summary quality validation
 
 - [ ] **3.4 API Route Implementation for Business Logic**
   - [ ] **3.4.1 Summary Generation API**
@@ -461,3 +464,23 @@ WhatsApp ←→ Go Bridge ←→ Supabase DB ←→ Next.js App
 **Last Updated**: 2025-07-19
 **Version**: 1.2.0
 **Status**: Phase 2 Complete - Phase 3 Detailed Planning Complete - Ready for Next.js Development 
+
+---
+
+## 🧪 Authentication Edge Cases & QA Tasks (To Be Addressed in Later Phases)
+
+- [ ] User enters invalid email format (should show error)
+- [ ] User requests magic link for unregistered email (should not reveal if email exists)
+- [ ] User requests magic link for registered email (should show success message)
+- [ ] User clicks expired magic link (should show error)
+- [ ] User clicks magic link on a different device/browser (should handle gracefully)
+- [ ] User tries to access protected route while not authenticated (should redirect to login)
+- [ ] User logs out and tries to access protected route (should redirect to login)
+- [ ] User session expires (should require re-authentication)
+- [ ] Network failure during login/logout (should show error)
+- [ ] Multiple login attempts in quick succession (should handle rate limiting)
+- [ ] User tries to register with an email already in use (should show appropriate message)
+- [ ] User tries to use magic link twice (should handle gracefully)
+- [ ] User logs in, then refreshes page (should remain authenticated)
+- [ ] User logs in, then closes and reopens browser (should remain authenticated if session is valid)
+- [ ] User logs in, then logs out, then uses back button (should not regain access) 
