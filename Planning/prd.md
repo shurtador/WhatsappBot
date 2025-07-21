@@ -194,7 +194,7 @@ WhatsApp ←→ Go Bridge ←→ Supabase DB ←→ Next.js App
   - [x] Implement retry logic for failed API calls
   - [x] Create summary quality validation
 
-- [ ] **3.4 API Route Implementation for Business Logic**
+- [x] **3.4 API Route Implementation for Business Logic**
   - [ ] **3.4.1 Summary Generation API**
     - [ ] Create `/api/summaries/generate` endpoint
     - [ ] Implement message retrieval from Supabase
@@ -206,11 +206,11 @@ WhatsApp ←→ Go Bridge ←→ Supabase DB ←→ Next.js App
     - [ ] Implement scheduling logic with cron-like functionality
     - [ ] Add schedule management (create, update, delete)
     - [ ] Integrate with message sending via Go bridge
-  - [ ] **3.4.3 Contact Management API**
-    - [ ] Create `/api/people` endpoint for listing contacts
-    - [ ] Create `/api/people/[jid]` endpoint for updating contact info
-    - [ ] Implement contact search and filtering
-    - [ ] Add contact enrichment functionality
+  - [x] **3.4.3 Contact Management API**
+  - [x] Create `/api/people` endpoint for listing contacts
+  - [x] Create `/api/people/[jid]` endpoint for updating contact info
+  - [x] Implement contact search and filtering
+  - [x] Add contact enrichment functionality
   - [ ] **3.4.4 Analytics API**
     - [ ] Create `/api/analytics/engagement` endpoint
     - [ ] Implement engagement metrics calculation
